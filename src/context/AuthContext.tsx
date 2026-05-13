@@ -1,7 +1,7 @@
 // src/context/AuthContext.tsx
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { authService } from '@/services/auth.service';
 import { clearAuthCookies } from '@/services/api.client';
@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(cachedUser);
   // If we already have a cached user, skip the loading state
   const [isLoading, setIsLoading] = useState(cachedUser === null);
+  const initialized = useRef(false);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -39,6 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    
     // If we already have a cached user from a previous render, skip the API call
     if (cachedUser !== null) {
       setIsLoading(false);

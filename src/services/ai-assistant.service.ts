@@ -7,6 +7,16 @@ export const aiAssistantService = {
     return data.data;
   },
 
+  async doctorChat(message: string, patientId?: string) {
+    const { data } = await apiClient.post('/ai-assistant/doctor/chat', { message, patientId });
+    return data.data;
+  },
+
+  async adminChat(message: string, period: 'daily' | 'weekly' = 'daily') {
+    const { data } = await apiClient.post('/ai-assistant/admin/chat', { message, period });
+    return data.data;
+  },
+
   async getMySessions() {
     const { data } = await apiClient.get('/ai-assistant/sessions');
     return data.data;

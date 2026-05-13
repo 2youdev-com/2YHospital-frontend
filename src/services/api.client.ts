@@ -1,12 +1,17 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = BASE_URL || 'http://localhost:3001/api/v1';
+
+if (!BASE_URL && process.env.NODE_ENV === 'development') {
+  console.warn('⚠️ NEXT_PUBLIC_API_URL is not defined. Using default localhost for development.');
+}
 
 export const apiClient = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15000,
+  timeout: 60000,
 });
 
 // ── Request interceptor: attach access token ──────────────────────────────
@@ -53,7 +58,7 @@ apiClient.interceptors.response.use(
       }
 
       try {
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh-token`, { refreshToken });
+        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh-token`, { refreshToken });
         const newToken = data.data.accessToken;
         Cookies.set('accessToken', newToken, { expires: 1 });
         processQueue(null, newToken);

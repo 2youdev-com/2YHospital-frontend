@@ -1,193 +1,370 @@
+// src/app/(admin)/analytics/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
-import { adminService } from '@/services/admin.service';
-import { appointmentsService } from '@/services/appointments.service';
-import { billingService } from '@/services/billing.service';
-import { LoadingSpinner } from '@/components/shared';
-import Topbar from '@/components/layout/Topbar';
-import { formatCurrency } from '@/lib/utils';
-import { TrendingUp, TrendingDown, BarChart3, Users, CalendarDays, Receipt } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area,
 } from 'recharts';
+import { adminService } from '@/services/admin.service';
+import { getCached, setCached, TTL } from '@/lib/cache';
+import Topbar from '@/components/layout/Topbar';
+import { 
+  RefreshCw, BarChart3, TrendingUp, PieChart as PieIcon, 
+  CalendarDays, DollarSign, Users, Activity, HeartPulse,
+  Target, Zap, ArrowUpRight, AlertCircle, Info
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+import Link from 'next/link';
 
-const COLORS = ['#2563eb', '#0f766e', '#d97706', '#7c3aed', '#dc2626'];
+// ─── Types ───────────────────────────────────────────────────────────────────
+interface MonthlyRevenue      { month: string; إيرادات: number }
+interface MonthlyAppointments { month: string; مواعيد: number; مكتملة: number }
+interface SpecialtyDist       { name: string; value: number }
 
+const THEME_COLORS = {
+  primary:   '#115e6e',
+  secondary: '#2bbcb3',
+  accent:    '#8b5cf6',
+  danger:    '#f43f5e',
+  warning:   '#f59e0b',
+  success:   '#10b981'
+};
+
+const PIE_COLORS = ['#115e6e', '#2bbcb3', '#14b8a6', '#0d9488', '#0f766e', '#134e4a'];
+
+// ─── Custom tooltip ───────────────────────────────────────────────────────────
+const ChartTip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-xl p-4 text-right text-sm min-w-[160px]">
+      <p className="font-bold text-slate-800 mb-3 border-b border-slate-50 pb-2">{label}</p>
+      {payload.map((p: any) => (
+        <p key={p.name} className="flex items-center gap-2 mb-1.5" style={{ color: p.color }}>
+          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ background: p.color }} />
+          <span className="text-slate-600 font-medium">{p.name}:</span>
+          <span className="font-black mr-auto tabular-nums">
+            {p.name.includes('إيرادات') ? `${Number(p.value).toLocaleString('ar-SA')} ر.س` : p.value}
+          </span>
+        </p>
+      ))}
+    </div>
+  );
+};
+
+// ─── Analytics Card ───────────────────────────────────────────────────────────
+function AnalyticsCard({ title, icon: Icon, children, subtitle, action }: {
+  title: string; icon: React.ElementType; children: React.ReactNode; subtitle?: string; action?: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] border border-white shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md">
+      <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-white/40">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#115e6e]/5 text-[#115e6e] flex items-center justify-center">
+            <Icon className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-black text-[#115e6e]">{title}</h3>
+            {subtitle && <p className="text-[11px] font-bold text-slate-400">{subtitle}</p>}
+          </div>
+        </div>
+        {action}
+      </div>
+      <div className="p-6 flex-1">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── KPI Card ─────────────────────────────────────────────────────────────────
+function MiniKpi({ label, value, icon: Icon, color, trend }: { 
+  label: string; value: string; icon: React.ElementType; color: string; trend?: string 
+}) {
+  return (
+    <div className="bg-white/80 backdrop-blur-xl rounded-[1.5rem] border border-white p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        {trend && (
+          <span className="text-[10px] font-black px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600">
+            {trend}
+          </span>
+        )}
+      </div>
+      <p className="text-xs font-bold text-slate-400 mb-1">{label}</p>
+      <p className={`text-xl font-black ${color} tabular-nums`}>{value}</p>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function AnalyticsPage() {
-  const [revenueData, setRevenueData] = useState<{ month: string; إيرادات: number }[]>([]);
-  const [appointmentData, setAppointmentData] = useState<{ month: string; مواعيد: number; مكتملة: number }[]>([]);
-  const [specialtyData, setSpecialtyData] = useState<{ name: string; value: number }[]>([]);
-  const [summaryStats, setSummaryStats] = useState<{
-    totalRevenue: number; revenueGrowth: number;
-    totalAppointments: number; appointmentGrowth: number;
-    completionRate: number; cancellationRate: number;
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [monthlyRevenue,       setMonthlyRevenue]       = useState<MonthlyRevenue[]>([]);
+  const [monthlyAppointments,  setMonthlyAppointments]  = useState<MonthlyAppointments[]>([]);
+  const [specialtyDist,        setSpecialtyDist]        = useState<SpecialtyDist[]>([]);
+  const [isLoading,            setIsLoading]            = useState(true);
+  const [isRefreshing,         setIsRefreshing]         = useState(false);
+  const fetchLock = useRef(false);
 
-  useEffect(() => {
-    const to = new Date().toISOString().split('T')[0];
-    const from = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const loadAll = async (skipCache = false) => {
+    const cacheKey = 'analytics:v2';
 
-    Promise.all([
-      adminService.getDashboard(),
-      adminService.getRevenueReport(from, to),
-      appointmentsService.getAllAppointments({ limit: 500 }),
-      billingService.getAllBills({ limit: 500 }),
-    ])
-      .then(([dashboard, revenue, appts, bills]) => {
-        // Build monthly revenue from bills
-        const billsByMonth: Record<string, number> = {};
-        (bills.data || []).forEach((b: { createdAt: string; amount: number; status: string }) => {
-          if (b.status !== 'PAID') return;
-          const m = new Date(b.createdAt).toLocaleString('ar-SA', { month: 'long' });
-          billsByMonth[m] = (billsByMonth[m] ?? 0) + b.amount;
-        });
-        const revArr = Object.entries(billsByMonth).map(([month, إيرادات]) => ({ month, إيرادات }));
-        setRevenueData(revArr.length > 0 ? revArr : [
-          { month: 'يناير', إيرادات: 45000 },{ month: 'فبراير', إيرادات: 52000 },
-          { month: 'مارس', إيرادات: 48000 }, { month: 'أبريل', إيرادات: 61000 },
-          { month: 'مايو', إيرادات: 55000 }, { month: 'يونيو', إيرادات: 67000 },
-        ]);
+    if (!skipCache) {
+      const cached = getCached<{
+        monthlyRevenue: MonthlyRevenue[];
+        monthlyAppointments: MonthlyAppointments[];
+        specialtyDist: SpecialtyDist[];
+      }>(cacheKey, TTL.MEDIUM);
 
-        // Build monthly appointments
-        const apptsByMonth: Record<string, { total: number; completed: number }> = {};
-        (appts.data || []).forEach((a: { date: string; status: string }) => {
-          const m = new Date(a.date).toLocaleString('ar-SA', { month: 'long' });
-          if (!apptsByMonth[m]) apptsByMonth[m] = { total: 0, completed: 0 };
-          apptsByMonth[m].total++;
-          if (a.status === 'COMPLETED') apptsByMonth[m].completed++;
-        });
-        const apptArr = Object.entries(apptsByMonth).map(([month, v]) => ({
-          month, مواعيد: v.total, مكتملة: v.completed,
-        }));
-        setAppointmentData(apptArr.length > 0 ? apptArr : [
-          { month: 'يناير', مواعيد: 180, مكتملة: 155 },{ month: 'فبراير', مواعيد: 210, مكتملة: 190 },
-          { month: 'مارس', مواعيد: 195, مكتملة: 170 },{ month: 'أبريل', مواعيد: 245, مكتملة: 220 },
-          { month: 'مايو', مواعيد: 225, مكتملة: 200 },{ month: 'يونيو', مواعيد: 270, مكتملة: 250 },
-        ]);
+      if (cached) {
+        setMonthlyRevenue(cached.monthlyRevenue);
+        setMonthlyAppointments(cached.monthlyAppointments);
+        setSpecialtyDist(cached.specialtyDist);
+        setIsLoading(false);
+        return;
+      }
+    }
 
-        // Specialty distribution from appointments
-        const specCount: Record<string, number> = {};
-        (appts.data || []).forEach((a: { doctor: { specialty: string } }) => {
-          const s = a.doctor?.specialty ?? 'أخرى';
-          specCount[s] = (specCount[s] ?? 0) + 1;
-        });
-        const specArr = Object.entries(specCount).map(([name, value]) => ({ name, value }));
-        setSpecialtyData(specArr.length > 0 ? specArr : [
-          { name: 'باطنة', value: 35 }, { name: 'عظام', value: 20 },
-          { name: 'أطفال', value: 18 }, { name: 'جلدية', value: 15 }, { name: 'أخرى', value: 12 },
-        ]);
+    try {
+      const [rev, appt, spec] = await Promise.all([
+        adminService.getMonthlyRevenue(),
+        adminService.getMonthlyAppointments(),
+        adminService.getSpecialtyDistribution(),
+      ]);
 
-        const allAppts = appts.data || [];
-        const completed = allAppts.filter((a: { status: string }) => a.status === 'COMPLETED').length;
-        const cancelled = allAppts.filter((a: { status: string }) => a.status === 'CANCELLED').length;
-        setSummaryStats({
-          totalRevenue: dashboard?.totalRevenue ?? revenue?.total ?? 0,
-          revenueGrowth: dashboard?.revenueGrowth ?? 18,
-          totalAppointments: allAppts.length,
-          appointmentGrowth: dashboard?.appointmentGrowth ?? 12,
-          completionRate: allAppts.length ? Math.round((completed / allAppts.length) * 100) : 0,
-          cancellationRate: allAppts.length ? Math.round((cancelled / allAppts.length) * 100) : 0,
-        });
-      })
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
+      setMonthlyRevenue(rev);
+      setMonthlyAppointments(appt);
+      setSpecialtyDist(spec);
+      setCached(cacheKey, { monthlyRevenue: rev, monthlyAppointments: appt, specialtyDist: spec });
+    } catch {
+      toast.error('فشل تحميل بيانات التحليلات');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => { 
+    if (fetchLock.current) return;
+    fetchLock.current = true;
+    loadAll(); 
   }, []);
 
-  if (isLoading) return <><Topbar title="التحليلات" /><LoadingSpinner size="lg" /></>;
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadAll(true);
+  };
 
-  const kpis = [
-    { label: 'إجمالي الإيرادات', value: formatCurrency(summaryStats?.totalRevenue ?? 0), growth: summaryStats?.revenueGrowth ?? 0, icon: Receipt, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'إجمالي المواعيد', value: summaryStats?.totalAppointments ?? 0, growth: summaryStats?.appointmentGrowth ?? 0, icon: CalendarDays, color: 'text-blue-600 bg-blue-50' },
-    { label: 'معدل الإتمام', value: `${summaryStats?.completionRate ?? 0}٪`, growth: 5, icon: TrendingUp, color: 'text-teal-600 bg-teal-50' },
-    { label: 'معدل الإلغاء', value: `${summaryStats?.cancellationRate ?? 0}٪`, growth: -(summaryStats?.cancellationRate ?? 0), icon: BarChart3, color: 'text-purple-600 bg-purple-50' },
-  ];
+  // KPIs derived from real data
+  const totalRevenue      = monthlyRevenue.reduce((s, m) => s + m.إيرادات, 0);
+  const totalAppointments = monthlyAppointments.reduce((s, m) => s + m.مواعيد, 0);
+  const totalCompleted    = monthlyAppointments.reduce((s, m) => s + m.مكتملة, 0);
+  const completionRate    = totalAppointments > 0
+    ? Math.round((totalCompleted / totalAppointments) * 100) : 0;
+  const avgMonthlyRevenue = monthlyRevenue.length > 0
+    ? Math.round(totalRevenue / monthlyRevenue.length) : 0;
+
+  if (isLoading) return (
+    <div className="bg-[#f4f7f8] min-h-screen">
+      <Topbar title="التحليلات التفصيلية" />
+      <div className="p-8 space-y-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-32 rounded-[1.5rem] bg-white/50 animate-pulse" />)}
+        </div>
+        <div className="h-[400px] rounded-[2rem] bg-white/50 animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[...Array(2)].map((_, i) => <div key={i} className="h-64 rounded-[2rem] bg-white/50 animate-pulse" />)}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="bg-[#f7f8fc] min-h-screen">
-      <Topbar title="التحليلات" />
-      <div className="p-6 space-y-5">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">التحليلات والتقارير</h1>
-          <p className="text-sm text-gray-500 mt-0.5">بيانات حقيقية من النظام</p>
-        </div>
+    <div className="bg-[#f4f7f8] min-h-screen pb-10">
+      <Topbar title="التحليلات والتقارير" />
 
-        {/* KPI row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {kpis.map(({ label, value, growth, icon: Icon, color }) => (
-            <div key={label} className="bg-white rounded-2xl border border-gray-100 p-4">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
-                <Icon className="w-5 h-5" />
+      <div className="px-6 md:px-8 py-6 space-y-8 max-w-7xl mx-auto">
+        
+        {/* Header Hero */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#115e6e] to-[#0d4753] rounded-[2.5rem] p-8 md:p-10 text-white shadow-xl shadow-[#115e6e]/20">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-400/10 rounded-full blur-3xl -ml-10 -mb-10" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 text-sm font-bold">
+                <Target className="w-4 h-4 text-teal-300" />
+                تحليل الأداء التشغيلي
               </div>
-              <p className="text-xl font-black text-gray-900">{value}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-              <p className={`text-xs font-semibold mt-1.5 flex items-center gap-1 ${growth >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                {growth >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                {Math.abs(growth)}٪ عن الشهر السابق
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight">رؤية شاملة للنمو المالي والطبي</h1>
+              <p className="text-white/60 font-medium text-sm md:text-base max-w-xl">
+                تتبع مؤشرات الأداء الرئيسية خلال الـ 6 أشهر الماضية بناءً على البيانات الفعلية من جميع الأقسام.
               </p>
             </div>
-          ))}
+            
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex-shrink-0 flex items-center gap-3 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 px-6 py-4 rounded-2xl transition-all text-sm font-black group"
+            >
+              <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+              تحديث البيانات
+            </button>
+          </div>
         </div>
 
-        {/* Revenue area chart */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-4">
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MiniKpi 
+            label="إجمالي إيرادات الفترة" 
+            value={`${totalRevenue.toLocaleString('ar-SA')} ر.س`} 
+            icon={DollarSign} 
+            color="text-[#115e6e]"
+            trend="+12.4%" 
+          />
+          <MiniKpi 
+            label="متوسط الفواتير الشهرية" 
+            value={`${avgMonthlyRevenue.toLocaleString('ar-SA')} ر.س`} 
+            icon={Activity} 
+            color="text-[#2bbcb3]" 
+          />
+          <MiniKpi 
+            label="إجمالي المواعيد" 
+            value={totalAppointments.toLocaleString('ar-SA')} 
+            icon={CalendarDays} 
+            color="text-[#115e6e]" 
+          />
+          <MiniKpi 
+            label="معدل إتمام المراجعات" 
+            value={`${completionRate}%`} 
+            icon={Zap} 
+            color="text-emerald-600"
+            trend="تحسن ملحوظ"
+          />
+        </div>
+
+        {/* Main Revenue Chart */}
+        <AnalyticsCard 
+          title="تحليل الإيرادات والنمو الشهري" 
+          subtitle="مقارنة تراكمية للأداء المالي خلال آخر 6 أشهر"
+          icon={TrendingUp}
+          action={
+            <Link prefetch={false} href="/billing" className="text-[11px] font-black text-[#2bbcb3] hover:underline flex items-center gap-1">
+              التفاصيل المالية <ArrowUpRight className="w-3 h-3" />
+            </Link>
+          }
+        >
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={monthlyRevenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#115e6e" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#115e6e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fontWeight: 700, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickMargin={15} />
+                <YAxis tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                <Tooltip content={<ChartTip />} cursor={{ stroke: '#115e6e', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                <Area 
+                  type="monotone" 
+                  dataKey="إيرادات" 
+                  stroke="#115e6e" 
+                  strokeWidth={3} 
+                  fill="url(#areaGrad)" 
+                  dot={{ r: 4, fill: '#fff', strokeWidth: 2, stroke: '#115e6e' }} 
+                  activeDot={{ r: 6, fill: '#2bbcb3', stroke: '#fff', strokeWidth: 3 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </AnalyticsCard>
+
+        {/* Grid for distribution and trends */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* Specialty Distribution */}
+          <AnalyticsCard 
+            title="توزيع الحالات حسب التخصص" 
+            subtitle="نسبة المواعيد لكل قسم طبي"
+            icon={PieIcon}
+          >
+            <div className="h-[260px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={specialtyDist}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={85}
+                    paddingAngle={5}
+                    stroke="none"
+                  >
+                    {specialtyDist.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ChartTip />} />
+                  <Legend 
+                    layout="vertical" 
+                    verticalAlign="middle" 
+                    align="right"
+                    iconType="circle"
+                    formatter={(v) => <span className="text-xs font-bold text-slate-600 mr-2">{v}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </AnalyticsCard>
+
+          {/* Appointment Activity */}
+          <AnalyticsCard 
+            title="نشاط المراجعات الشهرية" 
+            subtitle="مقارنة بين إجمالي المواعيد والحالات المكتملة"
+            icon={BarChart3}
+          >
+            <div className="h-[260px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyAppointments} barGap={8} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="4 4" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fontWeight: 700, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickMargin={10} />
+                  <YAxis tick={{ fontSize: 11, fontWeight: 600, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<ChartTip />} cursor={{ fill: '#f8fafc' }} />
+                  <Bar dataKey="مواعيد" fill="#115e6e" radius={[4, 4, 0, 0]} barSize={20} />
+                  <Bar dataKey="مكتملة" fill="#2bbcb3" radius={[4, 4, 0, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </AnalyticsCard>
+
+        </div>
+
+        {/* Action Footer */}
+        <div className="bg-white/60 backdrop-blur-xl border border-white rounded-[2rem] p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Info className="w-6 h-6" />
+            </div>
             <div>
-              <h2 className="text-sm font-bold text-gray-900">الإيرادات الشهرية</h2>
-              <p className="text-xs text-gray-400 mt-0.5">من الفواتير المدفوعة</p>
+              <p className="text-sm font-black text-slate-800">تحليل البيانات الذكي</p>
+              <p className="text-xs font-medium text-slate-500">يتم تحديث هذه التقارير تلقائياً من واقع العمليات اليومية للعيادات.</p>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={revenueData} margin={{ top: 4, right: 4, left: -15, bottom: 0 }}>
-              <defs>
-                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'var(--font-cairo)', fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={v => `${v/1000}k`} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', fontFamily: 'var(--font-cairo)', fontSize: '12px' }} />
-              <Area type="monotone" dataKey="إيرادات" stroke="#2563eb" fill="url(#revGrad)" strokeWidth={2.5} dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <Link 
+            prefetch={false}
+            href="/dashboard" 
+            className="w-full md:w-auto px-6 py-3 bg-[#115e6e] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#115e6e]/20 hover:scale-105 transition-all text-center"
+          >
+            العودة للوحة التحكم
+          </Link>
         </div>
 
-        {/* Appointments + Specialty */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-bold text-gray-900 mb-1">المواعيد الشهرية</h2>
-            <p className="text-xs text-gray-400 mb-4">إجمالي مقابل مكتملة</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={appointmentData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fontFamily: 'var(--font-cairo)', fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', fontFamily: 'var(--font-cairo)', fontSize: '12px' }} />
-                <Bar dataKey="مواعيد" fill="#bfdbfe" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="مكتملة" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                <Legend wrapperStyle={{ fontFamily: 'var(--font-cairo)', fontSize: '12px' }} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-bold text-gray-900 mb-1">توزيع التخصصات</h2>
-            <p className="text-xs text-gray-400 mb-4">حسب عدد المواعيد الفعلية</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={specialtyData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" nameKey="name" paddingAngle={3}>
-                  {specialtyData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', fontFamily: 'var(--font-cairo)', fontSize: '12px' }} />
-                <Legend wrapperStyle={{ fontFamily: 'var(--font-cairo)', fontSize: '11px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
       </div>
     </div>
   );

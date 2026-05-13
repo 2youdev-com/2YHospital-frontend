@@ -1,3 +1,4 @@
+// src/types/index.ts
 // ─── Auth ───────────────────────────────────────────────────────────────
 export type UserRole = 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'RECEPTIONIST' | 'FINANCE';
 
@@ -207,14 +208,27 @@ export interface BillItem {
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────
 export interface DashboardStats {
+  // Appointments — today
   totalAppointmentsToday: number;
-  totalDoctors: number;
-  totalPatients: number;
-  totalRevenue: number;
+  completedToday: number;
   pendingAppointments: number;
   cancelledToday: number;
-  revenueGrowth?: number;
-  appointmentGrowth?: number;
+  noShowToday: number;
+  confirmedToday: number;
+  appointmentGrowth: number | null;
+  // People
+  totalPatients: number;
+  totalDoctors: number;
+  newPatientsThisMonth: number;
+  newPatientsGrowth: number | null;
+  // Revenue
+  totalRevenue: number;
+  prevRevenue: number;
+  revenueGrowth: number | null;
+  // Billing
+  totalUnpaidBills: number;
+  // Waitlist
+  waitlistCount: number;
 }
 
 // ─── Notification ─────────────────────────────────────────────────────────

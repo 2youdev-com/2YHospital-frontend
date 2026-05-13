@@ -2,7 +2,15 @@ import { useState, useCallback } from 'react';
 import { aiAssistantService } from '@/services/ai-assistant.service';
 import type { ChatMessage } from '@/types';
 
-export function useAiAssistant() {
+type AiAssistantRole = 'patient' | 'doctor' | 'admin';
+
+interface UseAiAssistantOptions {
+  role?: AiAssistantRole;
+  patientId?: string;
+}
+
+export function useAiAssistant(options: UseAiAssistantOptions = {}) {
+  const { role = 'patient', patientId } = options;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
@@ -18,12 +26,16 @@ export function useAiAssistant() {
     setIsLoading(true);
 
     try {
-      const res = await aiAssistantService.chat(content, sessionId);
+      const res = role === 'doctor'
+        ? await aiAssistantService.doctorChat(content, patientId)
+        : role === 'admin'
+          ? await aiAssistantService.adminChat(content)
+          : await aiAssistantService.chat(content, sessionId);
       if (res.sessionId) setSessionId(res.sessionId);
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: res.message ?? res.reply ?? JSON.stringify(res),
+        content: res.response ?? res.message ?? res.reply ?? 'تمت معالجة الطلب، لكن لم يصل رد قابل للعرض.',
         createdAt: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, aiMsg]);
@@ -35,7 +47,7 @@ export function useAiAssistant() {
     } finally {
       setIsLoading(false);
     }
-  }, [sessionId]);
+  }, [role, patientId, sessionId]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);

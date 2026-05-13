@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { appointmentsService } from '@/services/appointments.service';
 import { medicalRecordsService } from '@/services/medical-records.service';
 import { aiAssistantService } from '@/services/ai-assistant.service';
 import Topbar from '@/components/layout/Topbar';
-import { ArrowRight, Bot, CheckCircle2, Loader2, Sparkles, Pencil } from 'lucide-react';
+import { 
+  ArrowRight, Bot, CheckCircle2, Loader2, 
+  Sparkles, Pencil, Activity, ClipboardList, 
+  Save, Eraser, User, ChevronLeft, Zap, Info
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Appointment } from '@/types';
 
@@ -21,11 +25,17 @@ export default function VisitNotesPage() {
   const [step, setStep] = useState<Step>('write');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const fetchLock = useRef(false);
 
   useEffect(() => {
+    let ignore = false;
+    if (!appointmentId) return;
+
     appointmentsService.getMyAppointment(appointmentId)
-      .then(setAppt)
-      .catch(() => {});
+      .then(res => { if (!ignore) setAppt(res); })
+      .catch(() => { if (!ignore) toast.error('فشل تحميل بيانات الموعد'); });
+
+    return () => { ignore = true; };
   }, [appointmentId]);
 
   const handleGenerateDraft = async () => {
@@ -34,7 +44,7 @@ export default function VisitNotesPage() {
     try {
       const patientId = appt?.patient?.id ?? appointmentId;
       const res = await aiAssistantService.draftVisitSummary(patientId, notes);
-      setDraft(res.draft ?? res.summary ?? JSON.stringify(res));
+      setDraft(res.draft ?? res.summary ?? 'تم توليد المسودة، لكن لم يصل نص قابل للعرض.');
       setStep('review');
     } catch { toast.error('فشل توليد المسودة'); }
     finally { setIsGenerating(false); }
@@ -52,143 +62,209 @@ export default function VisitNotesPage() {
   };
 
   return (
-    <div className="bg-[#f7f8fc] min-h-screen">
-      <Topbar title="ملاحظات الزيارة" />
-      <div className="p-6 max-w-2xl space-y-5">
+    <div className="bg-[#f4f7f8] min-h-screen pb-12">
+      <Topbar title="التوثيق السريري" subtitle="تسجيل الملاحظات وصياغة التقارير الذكية" />
+      
+      <div className="px-6 md:px-8 py-8 max-w-4xl mx-auto space-y-8">
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
-            <ArrowRight className="w-4 h-4" /> العودة
+        {/* Header & Context */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <button 
+            onClick={() => router.back()} 
+            className="flex items-center gap-2 text-sm font-black text-[#115e6e] hover:bg-white px-4 py-2 rounded-xl transition-all w-fit"
+          >
+            <ArrowRight className="w-4 h-4" /> العودة للتفاصيل
           </button>
+          
           {appt && (
-            <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-2">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-teal-400 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            <div className="bg-white/80 backdrop-blur-xl border border-white rounded-[1.5rem] px-5 py-3 shadow-sm flex items-center gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-[#115e6e] text-white flex items-center justify-center font-black text-lg">
                 {appt.patient?.name?.[0] ?? 'م'}
               </div>
-              <p className="text-sm font-semibold text-gray-700">{appt.patient?.name ?? 'مريض'}</p>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">المريض الحالي</p>
+                <p className="text-sm font-black text-slate-800">{appt.patient?.name ?? 'مريض'}</p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Progress steps */}
-        <div className="flex items-center gap-2">
-          {(['write', 'review', 'done'] as Step[]).map((s, i) => {
-            const labels = { write: 'الملاحظات', review: 'المراجعة', done: 'تم الحفظ' };
-            const isDone = step === 'done' || (step === 'review' && s === 'write');
-            const isCurrent = step === s;
+        {/* Clinical Progress Stepper */}
+        <div className="bg-white/60 backdrop-blur-xl rounded-[2.5rem] p-6 border border-white shadow-sm flex items-center justify-center gap-2 md:gap-8">
+          {[
+            { id: 'write', label: 'كتابة الملاحظات', icon: Pencil },
+            { id: 'review', label: 'المراجعة الذكية', icon: Sparkles },
+            { id: 'done', label: 'الاعتماد النهائي', icon: ShieldCheck }
+          ].map((s, idx) => {
+            const isDone = step === 'done' || (step === 'review' && s.id === 'write');
+            const isCurrent = step === s.id;
+            const Icon = s.icon;
+            
             return (
-              <div key={s} className="flex items-center gap-2 flex-1">
-                <div className={`flex items-center gap-2 ${i > 0 ? 'flex-1' : ''}`}>
-                  {i > 0 && <div className={`h-0.5 flex-1 ${isDone ? 'bg-teal-500' : 'bg-gray-200'}`} />}
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-colors ${isDone ? 'bg-teal-500 text-white' : isCurrent ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                    {isDone ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+              <div key={s.id} className="flex items-center gap-3">
+                <div className={`flex flex-col md:flex-row items-center gap-3 ${idx > 0 ? 'ml-2' : ''}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                    isDone ? 'bg-emerald-500 text-white' : 
+                    isCurrent ? 'bg-[#115e6e] text-white shadow-lg' : 
+                    'bg-slate-100 text-slate-400'
+                  }`}>
+                    {isDone ? <CheckCircle2 className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                   </div>
+                  <span className={`text-[11px] font-black uppercase tracking-wider hidden md:block ${
+                    isCurrent || isDone ? 'text-slate-800' : 'text-slate-400'
+                  }`}>
+                    {s.label}
+                  </span>
                 </div>
-                <span className={`text-xs font-medium hidden sm:block ${isCurrent ? 'text-gray-900' : 'text-gray-400'}`}>{labels[s]}</span>
+                {idx < 2 && <ChevronLeft className="w-4 h-4 text-slate-200 hidden md:block" />}
               </div>
             );
           })}
         </div>
 
-        {/* Step: Write */}
+        {/* Main Workspace: Step Write */}
         {step === 'write' && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
-            <div>
-              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                <Pencil className="w-4 h-4 text-blue-600" /> ملاحظاتك السريرية
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">اكتب ملاحظاتك ثم سنولّد ملخصاً ذكياً لمراجعته</p>
-            </div>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full border-2 border-gray-200 focus:border-blue-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors resize-none leading-relaxed"
-              rows={7}
-              placeholder="الأعراض، الفحص السريري، التشخيص، خطة العلاج، التوصيات..."
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={handleGenerateDraft}
-                disabled={isGenerating || !notes.trim()}
-                className="flex items-center gap-2 bg-gradient-to-l from-purple-600 to-blue-600 hover:opacity-90 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                {isGenerating ? 'جارٍ توليد المسودة...' : 'توليد ملخص ذكي'}
-              </button>
-              <button
-                onClick={() => handleSave(notes)}
-                disabled={isSaving || !notes.trim()}
-                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                حفظ مباشرة
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step: Review AI draft */}
-        {step === 'review' && (
-          <div className="space-y-4">
-            {/* Original notes (collapsed) */}
-            <div className="bg-gray-50 rounded-2xl border border-gray-100 p-4">
-              <p className="text-xs font-semibold text-gray-500 mb-2">ملاحظاتك الأصلية</p>
-              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap line-clamp-3">{notes}</p>
-              <button onClick={() => setStep('write')} className="text-xs text-blue-600 hover:text-blue-800 mt-2">تعديل</button>
-            </div>
-
-            {/* AI Draft */}
-            <div className="bg-white rounded-2xl border border-purple-200 p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
+          <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <ClipboardList className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-gray-900">المسودة الذكية</p>
-                  <p className="text-xs text-purple-600">راجع وعدّل قبل الاعتماد</p>
+                  <h2 className="text-xl font-black text-slate-800">ملاحظات الزيارة</h2>
+                  <p className="text-xs font-medium text-slate-400 mt-1">سجل تفاصيل الحالة، الفحص، والتشخيص المبدئي.</p>
                 </div>
               </div>
+            </div>
+
+            <div className="p-8 space-y-6">
               <textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                className="w-full border-2 border-purple-100 focus:border-purple-400 rounded-xl px-4 py-3 text-sm outline-none transition-colors resize-none leading-relaxed bg-purple-50/30"
-                rows={8}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full bg-slate-50/50 border-2 border-slate-100 focus:border-[#115e6e]/30 rounded-[1.8rem] px-8 py-6 text-base font-medium text-slate-700 outline-none transition-all min-h-[300px] leading-relaxed placeholder:text-slate-300"
+                placeholder="ابدأ بكتابة الأعراض، نتائج الفحص السريري، أو خطة العلاج المقترحة..."
+                autoFocus
               />
-              <div className="flex gap-3">
+              
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button
-                  onClick={() => handleSave(draft)}
-                  disabled={isSaving || !draft.trim()}
-                  className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                  onClick={handleGenerateDraft}
+                  disabled={isGenerating || !notes.trim()}
+                  className="flex-1 flex items-center justify-center gap-3 bg-gradient-to-br from-[#115e6e] to-[#2bbcb3] text-white font-black text-sm px-8 py-4 rounded-2xl shadow-lg shadow-[#115e6e]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
                 >
-                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  اعتماد وحفظ
+                  {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                  توليد ملخص ذكي (AI)
                 </button>
-                <button onClick={() => { setDraft(''); setStep('write'); }} className="text-sm text-gray-500 hover:text-gray-700 px-3">
-                  إعادة الكتابة
+                <button
+                  onClick={() => handleSave(notes)}
+                  disabled={isSaving || !notes.trim()}
+                  className="flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-600 font-black text-sm px-8 py-4 rounded-2xl hover:bg-slate-50 transition-all disabled:opacity-50 shadow-sm"
+                >
+                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                  حفظ مباشرة
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Step: Done */}
-        {step === 'done' && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-            <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-8 h-8 text-teal-600" />
+        {/* Main Workspace: Step Review AI Draft */}
+        {step === 'review' && (
+          <div className="space-y-6">
+            {/* Original Source Reference (Compact) */}
+            <div className="bg-slate-100/50 rounded-[1.8rem] border border-slate-200 p-6">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Info className="w-3 h-3" /> الملاحظات الأصلية للمرجعية
+              </p>
+              <p className="text-sm font-medium text-slate-600 leading-relaxed whitespace-pre-wrap line-clamp-3 italic opacity-80">{notes}</p>
+              <button 
+                onClick={() => setStep('write')} 
+                className="mt-3 text-xs font-black text-[#115e6e] hover:underline"
+              >
+                تعديل النص الأصلي
+              </button>
             </div>
-            <h2 className="text-lg font-bold text-gray-900">تم حفظ الملاحظات</h2>
-            <p className="text-sm text-gray-500 mt-1">تم حفظ ملاحظات الزيارة في السجل الطبي بنجاح</p>
-            <div className="flex gap-3 justify-center mt-6">
-              <button onClick={() => router.back()} className="btn-secondary text-sm">العودة للموعد</button>
-              <button onClick={() => { setStep('write'); setNotes(''); setDraft(''); }} className="btn-primary text-sm">
-                ملاحظة جديدة
+
+            {/* AI Refined Draft */}
+            <div className="bg-white/90 backdrop-blur-xl rounded-[2.5rem] border-2 border-[#115e6e]/20 shadow-xl overflow-hidden">
+              <div className="p-8 bg-gradient-to-br from-[#115e6e]/5 to-transparent border-b border-slate-50 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white flex items-center justify-center shadow-md">
+                    <Bot className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-800">الصياغة السريرية المقترحة</h2>
+                    <p className="text-xs font-bold text-indigo-600 mt-1 flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> تم تنقيحها بواسطة الذكاء الاصطناعي
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  className="w-full bg-[#115e6e]/5 border border-[#115e6e]/10 focus:border-[#115e6e]/30 rounded-[1.8rem] px-8 py-6 text-base font-bold text-slate-700 outline-none transition-all min-h-[350px] leading-relaxed shadow-inner"
+                  rows={10}
+                />
+                
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <button
+                    onClick={() => handleSave(draft)}
+                    disabled={isSaving || !draft.trim()}
+                    className="flex-1 flex items-center justify-center gap-3 bg-emerald-600 text-white font-black text-sm px-8 py-4 rounded-2xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
+                    اعتماد وحفظ السجل
+                  </button>
+                  <button 
+                    onClick={() => { setDraft(''); setStep('write'); }} 
+                    className="flex items-center justify-center gap-3 bg-white border border-slate-200 text-slate-400 font-black text-sm px-8 py-4 rounded-2xl hover:text-slate-600 transition-all shadow-sm"
+                  >
+                    <Eraser className="w-5 h-5" />
+                    إعادة الصياغة يدوياً
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Workspace: Step Done */}
+        {step === 'done' && (
+          <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white p-12 text-center shadow-xl">
+            <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner ring-4 ring-emerald-50/50">
+              <CheckCircle2 className="w-12 h-12" />
+            </div>
+            <h2 className="text-3xl font-black text-slate-800 mb-3">تم الحفظ بنجاح</h2>
+            <p className="text-base font-medium text-slate-400 mb-10 max-w-sm mx-auto">
+              تمت أرشفة ملاحظات الزيارة وتحديث السجل الطبي للمريض بنجاح وفق المعايير السريرية.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button 
+                onClick={() => router.push(`/portal/appointments/${appointmentId}`)} 
+                className="w-full sm:w-auto px-10 py-4 bg-[#115e6e] text-white font-black text-sm rounded-2xl hover:bg-[#0d4753] shadow-lg shadow-[#115e6e]/20 transition-all"
+              >
+                العودة للملف
+              </button>
+              <button 
+                onClick={() => { setStep('write'); setNotes(''); setDraft(''); }} 
+                className="w-full sm:w-auto px-10 py-4 bg-white border border-slate-200 text-slate-600 font-black text-sm rounded-2xl hover:bg-slate-50 transition-all shadow-sm"
+              >
+                إضافة ملاحظة أخرى
               </button>
             </div>
           </div>
         )}
+
+        {/* Footer Guarantee */}
+        <div className="flex items-center justify-center gap-3 text-[11px] font-black text-slate-300 uppercase tracking-widest pt-8 border-t border-slate-100">
+          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <span>التوثيق السريري الآمن - 2YHospital v2.0</span>
+        </div>
+
       </div>
     </div>
   );

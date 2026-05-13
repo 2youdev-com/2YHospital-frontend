@@ -45,6 +45,7 @@ export const appointmentsService = {
 
   async book(payload: {
     doctorId: string;
+    patientId?: string;
     date: string;
     time: string;
     branchId?: string;

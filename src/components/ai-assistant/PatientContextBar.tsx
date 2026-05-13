@@ -1,6 +1,7 @@
 'use client';
 
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Loader2, ShieldCheck, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface PatientContextBarProps {
   summary: string;
@@ -15,34 +16,37 @@ export default function PatientContextBar({
   title = 'ملخص المريض',
   accentColor = 'teal',
 }: PatientContextBarProps) {
-  const colors = {
-    teal: { icon: 'text-teal-600', bg: 'bg-teal-50 border-teal-100' },
-    blue: { icon: 'text-blue-600', bg: 'bg-blue-50 border-blue-100' },
-  };
-  const c = colors[accentColor];
+  const accent = accentColor === 'teal' ? 'text-teal-700 bg-teal-50 border-teal-100' : 'text-blue-700 bg-blue-50 border-blue-100';
 
   return (
-    <div className="w-72 border-l border-gray-200 bg-white flex flex-col flex-shrink-0">
-      <div className="px-4 py-4 border-b border-gray-100">
-        <h3 className={`font-semibold text-gray-800 flex items-center gap-2 text-sm`}>
-          <Sparkles className={`w-4 h-4 ${c.icon}`} />
+    <aside className="hidden w-80 flex-shrink-0 flex-col border-l border-slate-200 bg-white lg:flex">
+      <div className="border-b border-slate-200 p-4">
+        <h3 className="flex items-center gap-2 text-sm font-black text-slate-950">
+          <Sparkles className="h-4 w-4 text-teal-600" />
           {title}
         </h3>
+        <p className="mt-1 text-xs leading-5 text-slate-500">يعرض هذا القسم ملخصا آمنا فقط، وليس بيانات خام من النظام.</p>
       </div>
       <div className="flex-1 overflow-y-auto p-4">
         {isLoading ? (
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>جارٍ التحميل...</span>
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            جار التحميل...
           </div>
         ) : summary ? (
-          <p className={`text-sm text-gray-700 leading-relaxed whitespace-pre-wrap p-3 rounded-xl border ${c.bg}`}>
-            {summary}
-          </p>
+          <div className={cn('rounded-xl border p-3 text-sm leading-7', accent)}>
+            <div className="mb-2 flex items-center gap-2 text-xs font-bold">
+              <ShieldCheck className="h-4 w-4" />
+              سياق مصرح به
+            </div>
+            <p className="whitespace-pre-wrap text-slate-700">{summary}</p>
+          </div>
         ) : (
-          <p className="text-sm text-gray-400 text-center py-4">لا يوجد ملخص</p>
+          <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
+            لا يوجد ملخص متاح
+          </div>
         )}
       </div>
-    </div>
+    </aside>
   );
 }

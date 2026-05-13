@@ -3,29 +3,20 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { billingService } from '@/services/billing.service';
-import { LoadingSpinner, SearchBar, Select, EmptyState, Badge } from '@/components/shared';
 import Topbar from '@/components/layout/Topbar';
-import { Receipt, Eye, TrendingUp, AlertCircle, CheckCircle2, Clock, Plus } from 'lucide-react';
+import { 
+  Receipt, Eye, TrendingUp, AlertCircle, 
+  CheckCircle2, Clock, Plus, Search, Filter,
+  WalletCards, FileText, CalendarDays
+} from 'lucide-react';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import { BILL_STATUS_LABELS, BILL_STATUS_COLORS } from '@/lib/constants';
+import { BILL_STATUS_LABELS } from '@/lib/constants';
 import type { Bill, BillStatus } from '@/types';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'جميع الحالات' },
   ...Object.entries(BILL_STATUS_LABELS).map(([value, label]) => ({ value, label })),
 ];
-
-function SummaryCard({ label, value, icon: Icon, color }: { label: string; value: string; icon: React.ElementType; color: string }) {
-  return (
-    <div className={`flex items-center gap-3 p-4 rounded-2xl border ${color}`}>
-      <Icon className="w-5 h-5 flex-shrink-0" />
-      <div>
-        <p className="text-xs font-medium opacity-70">{label}</p>
-        <p className="text-lg font-black mt-0.5">{value}</p>
-      </div>
-    </div>
-  );
-}
 
 export default function BillingPage() {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -53,85 +44,213 @@ export default function BillingPage() {
   const overdue = bills.filter(b => (b.status as string) === 'OVERDUE').reduce((s, b) => s + b.amount, 0);
   const partial = bills.filter(b => (b.status as string) === 'PARTIALLY_PAID').reduce((s, b) => s + b.amount, 0);
 
-  return (
-    <div className="bg-[#f7f8fc] min-h-screen">
-      <Topbar title="الفواتير" />
-      <div className="p-6 space-y-5">
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'PAID': return { cls: 'bg-emerald-50 text-emerald-600 border-emerald-100', dot: 'bg-emerald-500', label: 'مدفوعة' };
+      case 'PENDING': return { cls: 'bg-amber-50 text-amber-600 border-amber-100', dot: 'bg-amber-500', label: 'قيد الانتظار' };
+      case 'OVERDUE': return { cls: 'bg-rose-50 text-rose-600 border-rose-100', dot: 'bg-rose-500', label: 'متأخرة' };
+      case 'PARTIALLY_PAID': return { cls: 'bg-blue-50 text-blue-600 border-blue-100', dot: 'bg-blue-500', label: 'مدفوعة جزئياً' };
+      case 'CANCELLED': return { cls: 'bg-slate-50 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: 'ملغاة' };
+      default: return { cls: 'bg-slate-50 text-slate-600 border-slate-200', dot: 'bg-slate-500', label: status };
+    }
+  };
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">إدارة الفواتير</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{bills.length} فاتورة إجمالاً</p>
+  if (isLoading) {
+    return (
+      <div className="bg-[#f4f7f8] min-h-screen">
+        <Topbar title="إدارة الفواتير" />
+        <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+          <div className="h-32 rounded-[2rem] bg-white/50 animate-pulse border border-slate-100" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-24 rounded-[1.5rem] bg-white/50 animate-pulse border border-slate-100" />)}
           </div>
-          <Link href="/billing/new" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-md shadow-blue-200">
-            <Plus className="w-4 h-4" /> فاتورة جديدة
+          <div className="h-16 rounded-[1.5rem] bg-white/50 animate-pulse border border-slate-100" />
+          <div className="h-96 rounded-[2rem] bg-white/50 animate-pulse border border-slate-100" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#f4f7f8] min-h-screen pb-10">
+      <Topbar title="إدارة الشؤون المالية والفواتير" />
+      
+      <div className="px-6 md:px-8 py-6 space-y-6 max-w-7xl mx-auto">
+        
+        {/* Header Area */}
+        <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 lg:p-8 border border-white shadow-sm flex flex-col lg:flex-row gap-8 lg:items-center justify-between">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#115e6e] to-[#2bbcb3] flex items-center justify-center shadow-lg shadow-[#115e6e]/20 text-white">
+              <WalletCards className="w-8 h-8" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-[#115e6e] tracking-tight mb-2">الفواتير والتحصيل</h1>
+              <p className="text-sm font-medium text-slate-500">إدارة الإيرادات، المدفوعات، والفواتير المستحقة</p>
+            </div>
+          </div>
+          
+          <Link
+            href="/billing/new"
+            className="flex items-center justify-center gap-2 text-sm font-bold bg-[#115e6e] hover:bg-[#0d4753] text-white px-6 py-3.5 rounded-2xl transition-all shadow-lg shadow-[#115e6e]/20"
+          >
+            <Plus className="w-4 h-4" />
+            إنشاء فاتورة جديدة
           </Link>
         </div>
 
-        {/* Summary row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <SummaryCard label="إجمالي المحصّل" value={formatCurrency(paid)} icon={CheckCircle2} color="bg-emerald-50 border-emerald-100 text-emerald-800" />
-          <SummaryCard label="قيد الانتظار" value={formatCurrency(pending)} icon={Clock} color="bg-amber-50 border-amber-100 text-amber-800" />
-          <SummaryCard label="متأخرة" value={formatCurrency(overdue)} icon={AlertCircle} color="bg-red-50 border-red-100 text-red-800" />
-          <SummaryCard label="مدفوع جزئياً" value={formatCurrency(partial)} icon={TrendingUp} color="bg-blue-50 border-blue-100 text-blue-800" />
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-3 flex-wrap">
-          <div className="flex-1 min-w-52">
-            <SearchBar value={search} onChange={setSearch} placeholder="بحث بالمريض أو رقم الفاتورة..." />
+        {/* Financial Summaries */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white/80 backdrop-blur-xl rounded-[1.5rem] border border-white shadow-sm p-5 flex items-center gap-4 hover:-translate-y-1 transition-transform duration-300">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 border border-emerald-100">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 mb-0.5">إجمالي المحصّل</p>
+              <p className="text-xl font-black text-slate-800 tabular-nums">{formatCurrency(paid)}</p>
+            </div>
           </div>
-          <Select value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} className="w-44" />
+          
+          <div className="bg-white/80 backdrop-blur-xl rounded-[1.5rem] border border-white shadow-sm p-5 flex items-center gap-4 hover:-translate-y-1 transition-transform duration-300">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0 border border-amber-100">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 mb-0.5">قيد الانتظار</p>
+              <p className="text-xl font-black text-slate-800 tabular-nums">{formatCurrency(pending)}</p>
+            </div>
+          </div>
+
+          <div className="bg-white/80 backdrop-blur-xl rounded-[1.5rem] border border-white shadow-sm p-5 flex items-center gap-4 hover:-translate-y-1 transition-transform duration-300">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0 border border-rose-100">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 mb-0.5">مبالغ متأخرة</p>
+              <p className="text-xl font-black text-rose-600 tabular-nums">{formatCurrency(overdue)}</p>
+            </div>
+          </div>
+
+          <div className="bg-white/80 backdrop-blur-xl rounded-[1.5rem] border border-white shadow-sm p-5 flex items-center gap-4 hover:-translate-y-1 transition-transform duration-300">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 border border-blue-100">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 mb-0.5">تحصيل جزئي</p>
+              <p className="text-xl font-black text-slate-800 tabular-nums">{formatCurrency(partial)}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          {isLoading ? <LoadingSpinner /> : filtered.length === 0 ? (
-            <EmptyState title="لا توجد فواتير" icon={Receipt} />
+        {/* Filters Area */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-[1.5rem] border border-white shadow-sm p-4 flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input 
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ابحث باسم المريض أو رقم الفاتورة..."
+              className="w-full bg-slate-50 border border-slate-100 text-slate-700 text-sm font-bold rounded-xl pr-11 pl-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#2bbcb3]/50 focus:border-[#2bbcb3] transition-all placeholder:font-medium placeholder:text-slate-400"
+            />
+          </div>
+          
+          <div className="relative md:w-64 w-full">
+            <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#115e6e]" />
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full appearance-none bg-[#115e6e]/5 border border-[#115e6e]/10 text-[#115e6e] text-sm font-bold rounded-xl pr-9 pl-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#115e6e]/30 cursor-pointer"
+            >
+              {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Data Table */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] border border-white shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100 bg-white/50 flex items-center justify-between">
+            <h2 className="text-base font-black text-[#115e6e] flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              سجل الفواتير
+            </h2>
+            <div className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full">
+              يعرض {filtered.length} فاتورة
+            </div>
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                <Receipt className="w-8 h-8 text-slate-300" />
+              </div>
+              <h3 className="text-lg font-black text-slate-700 mb-1">لا توجد فواتير</h3>
+              <p className="text-sm font-medium text-slate-400">
+                {search || statusFilter ? 'لا توجد نتائج مطابقة لبحثك، جرب إزالة الفلاتر.' : 'لم يتم إصدار أي فواتير بعد.'}
+              </p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-right">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">رقم الفاتورة</th>
-                    <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">المريض</th>
-                    <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">المبلغ الإجمالي</th>
-                    <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">المدفوع</th>
-                    <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">تاريخ الاستحقاق</th>
-                    <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">الحالة</th>
-                    <th className="px-5 py-3.5 w-12" />
+                  <tr className="bg-slate-50/50">
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400">رقم الفاتورة</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400">المريض</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400">المبلغ الإجمالي</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 hidden md:table-cell">المدفوع</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 hidden lg:table-cell">الاستحقاق</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400">الحالة</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 w-20">عرض</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {filtered.map((bill) => (
-                    <tr key={bill.id} className="hover:bg-blue-50/30 transition-colors group">
-                      <td className="px-5 py-4">
-                        <span className="font-mono text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">#{bill.id.slice(-8).toUpperCase()}</span>
-                      </td>
-                      <td className="px-5 py-4 font-semibold text-gray-900 text-sm">{bill.patientName}</td>
-                      <td className="px-5 py-4 font-bold text-gray-900">{formatCurrency(bill.amount)}</td>
-                      <td className="px-5 py-4 hidden md:table-cell text-sm text-emerald-600 font-medium">
-                        {bill.paidAmount ? formatCurrency(bill.paidAmount) : '—'}
-                      </td>
-                      <td className="px-5 py-4 hidden lg:table-cell text-sm text-gray-500">{formatDate(bill.dueDate)}</td>
-                      <td className="px-5 py-4">
-                        <Badge className={BILL_STATUS_COLORS[bill.status as BillStatus]}>
-                          {BILL_STATUS_LABELS[bill.status as BillStatus]}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-4">
-                        <Link href={`/billing/${bill.id}`}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-100 transition-colors opacity-0 group-hover:opacity-100">
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y divide-slate-50">
+                  {filtered.map((bill) => {
+                    const statusStyle = getStatusStyle(bill.status as string);
+                    
+                    return (
+                      <tr key={bill.id} className="hover:bg-slate-50/80 transition-colors group">
+                        <td className="px-6 py-4">
+                          <span className="font-mono text-sm font-bold text-slate-400 bg-slate-100/80 px-2.5 py-1 rounded-xl">
+                            #{bill.id.slice(-8).toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="font-black text-slate-800 text-sm group-hover:text-[#115e6e] transition-colors">{bill.patientName}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="font-black text-[#115e6e] text-lg tabular-nums leading-none">
+                            {formatCurrency(bill.amount)}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4 hidden md:table-cell">
+                          <p className="text-sm font-bold text-emerald-600 tabular-nums">
+                            {bill.paidAmount ? formatCurrency(bill.paidAmount) : '—'}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4 hidden lg:table-cell">
+                          <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                            <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
+                            {formatDate(bill.dueDate)}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${statusStyle.cls}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
+                            {statusStyle.label}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Link prefetch={false} href={`/billing/${bill.id}`}
+                            className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-[#115e6e] hover:text-white hover:border-[#115e6e] transition-all shadow-sm"
+                            title="عرض الفاتورة"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
-              <div className="px-5 py-3 border-t border-gray-50">
-                <p className="text-xs text-gray-400">عرض {filtered.length} من {bills.length} فاتورة</p>
-              </div>
             </div>
           )}
         </div>

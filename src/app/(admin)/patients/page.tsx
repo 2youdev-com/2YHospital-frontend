@@ -1,38 +1,17 @@
-// src/app/(admin)/patients/page.tsx
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { adminService } from '@/services/admin.service';
-import { LoadingSpinner, SearchBar, EmptyState, Badge, Select } from '@/components/shared';
 import Topbar from '@/components/layout/Topbar';
 import {
   Users, Eye, Phone, Calendar, ShieldOff, ShieldCheck,
+  Search, Filter, Activity, ArrowUpRight, ActivitySquare,
+  UserCheck, UserX, UserSquare2
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import type { Patient } from '@/types';
-
-const GENDER_OPTIONS = [
-  { value: '', label: 'كل الأجناس' },
-  { value: 'MALE', label: 'ذكر' },
-  { value: 'FEMALE', label: 'أنثى' },
-];
-
-const STATUS_OPTIONS = [
-  { value: '', label: 'كل الحالات' },
-  { value: 'active', label: 'نشط' },
-  { value: 'inactive', label: 'موقوف' },
-];
-
-function SummaryChip({ label, count, color }: { label: string; count: number; color: string }) {
-  return (
-    <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium ${color}`}>
-      <span className="text-lg font-bold tabular-nums">{count}</span>
-      <span className="opacity-80">{label}</span>
-    </div>
-  );
-}
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -45,8 +24,8 @@ export default function PatientsPage() {
   const fetchPatients = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await adminService.getUsers({ role: 'PATIENT', limit: 200 });
-      setPatients(res.data ?? []);
+      const data = await adminService.getUsers({ role: 'PATIENT', limit: 200 });
+      setPatients(data ?? []);
     } catch {
       toast.error('فشل تحميل قائمة المرضى');
     } finally {
@@ -84,125 +63,208 @@ export default function PatientsPage() {
   const maleCount = patients.filter((p) => p.gender === 'MALE').length;
   const femaleCount = patients.filter((p) => p.gender === 'FEMALE').length;
 
+  if (isLoading) {
+    return (
+      <div className="bg-[#f4f7f8] min-h-screen">
+        <Topbar title="إدارة المرضى" />
+        <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+          <div className="h-32 rounded-[2rem] bg-white/50 animate-pulse border border-slate-100" />
+          <div className="h-16 rounded-[1.5rem] bg-white/50 animate-pulse border border-slate-100" />
+          <div className="h-96 rounded-[2rem] bg-white/50 animate-pulse border border-slate-100" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-[#f7f8fc] min-h-screen">
-      <Topbar title="المرضى" />
+    <div className="bg-[#f4f7f8] min-h-screen pb-10">
+      <Topbar title="إدارة المرضى والمراجعين" />
 
-      <div className="p-6 space-y-5">
-        {/* Summary chips */}
-        <div className="flex flex-wrap gap-3">
-          <SummaryChip label="إجمالي المرضى" count={patients.length} color="bg-blue-50 text-blue-700 border border-blue-100" />
-          <SummaryChip label="نشط" count={activeCount} color="bg-emerald-50 text-emerald-700 border border-emerald-100" />
-          <SummaryChip label="موقوف" count={patients.length - activeCount} color="bg-red-50 text-red-600 border border-red-100" />
-          <SummaryChip label="ذكور" count={maleCount} color="bg-indigo-50 text-indigo-700 border border-indigo-100" />
-          <SummaryChip label="إناث" count={femaleCount} color="bg-pink-50 text-pink-700 border border-pink-100" />
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
-          <div className="flex flex-wrap gap-3">
-            <div className="flex-1 min-w-48">
-              <SearchBar
-                value={search}
-                onChange={setSearch}
-                placeholder="ابحث بالاسم أو الجوال أو رقم الملف..."
-              />
+      <div className="px-6 md:px-8 py-6 space-y-6 max-w-7xl mx-auto">
+        
+        {/* Header & Stats Area */}
+        <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] p-6 lg:p-8 border border-white shadow-sm flex flex-col lg:flex-row gap-8 lg:items-center justify-between">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#115e6e] to-[#2bbcb3] flex items-center justify-center shadow-lg shadow-[#115e6e]/20 text-white">
+              <Users className="w-8 h-8" />
             </div>
-            <Select value={genderFilter} onChange={setGenderFilter} options={GENDER_OPTIONS} className="w-36" />
-            <Select value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} className="w-36" />
+            <div>
+              <h1 className="text-2xl font-black text-[#115e6e] tracking-tight mb-2">سجل المرضى</h1>
+              <p className="text-sm font-medium text-slate-500">إدارة ومتابعة سجلات المرضى والملفات الطبية</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-4">
+            <div className="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 min-w-[140px]">
+              <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center">
+                <UserSquare2 className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 mb-0.5">إجمالي المرضى</p>
+                <p className="text-xl font-black text-slate-700">{patients.length}</p>
+              </div>
+            </div>
+            <div className="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 min-w-[140px]">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <UserCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 mb-0.5">ملفات نشطة</p>
+                <p className="text-xl font-black text-emerald-600">{activeCount}</p>
+              </div>
+            </div>
+            <div className="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 min-w-[140px]">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <UserX className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 mb-0.5">ملفات موقوفة</p>
+                <p className="text-xl font-black text-rose-500">{patients.length - activeCount}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-600" />
-              قائمة المرضى
-              <span className="text-xs font-normal text-gray-400 mr-1">
-                ({filtered.length} من {patients.length})
-              </span>
+        {/* Filters Area */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-[1.5rem] border border-white shadow-sm p-4 flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input 
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ابحث بالاسم، رقم الجوال، أو رقم الملف (MRN)..."
+              className="w-full bg-slate-50 border border-slate-100 text-slate-700 text-sm font-bold rounded-xl pr-11 pl-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#2bbcb3]/50 focus:border-[#2bbcb3] transition-all placeholder:font-medium placeholder:text-slate-400"
+            />
+          </div>
+          
+          <div className="flex gap-4 md:w-auto w-full">
+            <div className="relative flex-1 md:w-40">
+              <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#115e6e]" />
+              <select 
+                value={genderFilter}
+                onChange={(e) => setGenderFilter(e.target.value)}
+                className="w-full appearance-none bg-[#115e6e]/5 border border-[#115e6e]/10 text-[#115e6e] text-sm font-bold rounded-xl pr-9 pl-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#115e6e]/30 cursor-pointer"
+              >
+                <option value="">كل الأجناس</option>
+                <option value="MALE">ذكر</option>
+                <option value="FEMALE">أنثى</option>
+              </select>
+            </div>
+            
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="flex-1 md:w-40 appearance-none bg-slate-50 border border-slate-100 text-slate-600 text-sm font-bold rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-slate-200 cursor-pointer"
+            >
+              <option value="">كل الحالات</option>
+              <option value="active">نشط فقط</option>
+              <option value="inactive">موقوف فقط</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Data Table */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] border border-white shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100 bg-white/50 flex items-center justify-between">
+            <h2 className="text-base font-black text-[#115e6e] flex items-center gap-2">
+              <ActivitySquare className="w-5 h-5" />
+              الجدول الزمني للمرضى
             </h2>
+            <div className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full">
+              يعرض {filtered.length} نتيجة
+            </div>
           </div>
 
-          {isLoading ? (
-            <LoadingSpinner />
-          ) : filtered.length === 0 ? (
-            <EmptyState
-              title="لا يوجد مرضى"
-              description="لم يتم العثور على مرضى مطابقين لمعايير البحث"
-              icon={Users}
-            />
+          {filtered.length === 0 ? (
+            <div className="py-20 flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                <Users className="w-8 h-8 text-slate-300" />
+              </div>
+              <h3 className="text-lg font-black text-slate-700 mb-1">لا يوجد مرضى مطابقين</h3>
+              <p className="text-sm font-medium text-slate-400">حاول البحث باستخدام كلمات أخرى أو تفريغ الفلاتر.</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-right">
                 <thead>
-                  <tr className="bg-gray-50 text-right">
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-500">المريض</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-500">رقم الجوال</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-500">الجنس</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-500">تاريخ الميلاد</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-500">رقم الملف</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-500">الحالة</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-500">إجراءات</th>
+                  <tr className="bg-slate-50/50">
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400">الاسم والملف</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400">معلومات الاتصال</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400">التركيبة</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400">الحالة</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-400 w-24">إجراءات</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-slate-50">
                   {filtered.map((patient) => (
-                    <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-3.5">
+                    <tr key={patient.id} className="hover:bg-slate-50/80 transition-colors group">
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                          <div className="w-10 h-10 rounded-[0.8rem] bg-gradient-to-br from-[#115e6e] to-[#2bbcb3] flex items-center justify-center text-white text-sm font-black flex-shrink-0 shadow-md shadow-[#115e6e]/10 group-hover:scale-105 transition-transform">
                             {patient.name?.[0] ?? 'م'}
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {patient.name || <span className="text-gray-400 italic text-xs">غير مكتمل</span>}
+                            <p className="text-sm font-black text-slate-800 mb-0.5 group-hover:text-[#115e6e] transition-colors">
+                              {patient.name || <span className="text-slate-300">غير مسجل</span>}
                             </p>
-                            {patient.bloodType && (
-                              <span className="text-xs text-red-500 font-medium">فصيلة {patient.bloodType}</span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">
+                                #{patient.mrn ?? 'N/A'}
+                              </span>
+                              {patient.bloodType && (
+                                <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-md">
+                                  {patient.bloodType}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5">
-                        <span className="text-sm text-gray-600 flex items-center gap-1.5" dir="ltr">
-                          <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                          {patient.phone}
-                        </span>
+                      
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-sm font-bold text-slate-600 flex items-center gap-1.5" dir="ltr">
+                            <Phone className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                            {patient.phone}
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-5 py-3.5">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          patient.gender === 'MALE'
-                            ? 'bg-indigo-50 text-indigo-700'
-                            : patient.gender === 'FEMALE'
-                            ? 'bg-pink-50 text-pink-700'
-                            : 'bg-gray-50 text-gray-500'
+
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1.5">
+                          <span className={`inline-flex self-start text-[10px] font-bold px-2 py-1 rounded-lg ${
+                            patient.gender === 'MALE'
+                              ? 'bg-blue-50 text-blue-600'
+                              : patient.gender === 'FEMALE'
+                              ? 'bg-fuchsia-50 text-fuchsia-600'
+                              : 'bg-slate-50 text-slate-500'
+                          }`}>
+                            {patient.gender === 'MALE' ? 'ذكر' : patient.gender === 'FEMALE' ? 'أنثى' : 'غير محدد'}
+                          </span>
+                          <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                            {patient.dateOfBirth ? formatDate(patient.dateOfBirth) : '—'}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${
+                          patient.isActive 
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                            : 'bg-rose-50 text-rose-600 border-rose-100'
                         }`}>
-                          {patient.gender === 'MALE' ? 'ذكر' : patient.gender === 'FEMALE' ? 'أنثى' : '—'}
+                          <span className={`w-1.5 h-1.5 rounded-full ${patient.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                          {patient.isActive ? 'حساب نشط' : 'موقوف'}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5">
-                        <span className="text-sm text-gray-500 flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
-                          {patient.dateOfBirth ? formatDate(patient.dateOfBirth) : '—'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-0.5 rounded">
-                          {patient.mrn ?? '—'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <Badge className={patient.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}>
-                          {patient.isActive ? 'نشط' : 'موقوف'}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-1">
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
                           <Link
                             href={`/patients/${patient.id}`}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-[#115e6e] hover:text-white hover:border-[#115e6e] transition-all shadow-sm"
                             title="عرض الملف الكامل"
                           >
                             <Eye className="w-4 h-4" />
@@ -210,17 +272,20 @@ export default function PatientsPage() {
                           <button
                             onClick={() => handleToggleStatus(patient)}
                             disabled={togglingId === patient.id}
-                            className={`p-1.5 rounded-lg transition-colors disabled:opacity-40 ${
+                            className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all disabled:opacity-50 shadow-sm ${
                               patient.isActive
-                                ? 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                                : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
+                                ? 'bg-white border-slate-200 text-slate-400 hover:bg-rose-500 hover:text-white hover:border-rose-500'
+                                : 'bg-white border-slate-200 text-slate-400 hover:bg-emerald-500 hover:text-white hover:border-emerald-500'
                             }`}
                             title={patient.isActive ? 'تعليق الحساب' : 'تفعيل الحساب'}
                           >
-                            {patient.isActive
-                              ? <ShieldOff className="w-4 h-4" />
-                              : <ShieldCheck className="w-4 h-4" />
-                            }
+                            {togglingId === patient.id ? (
+                              <Activity className="w-4 h-4 animate-spin" />
+                            ) : patient.isActive ? (
+                              <ShieldOff className="w-4 h-4" />
+                            ) : (
+                              <ShieldCheck className="w-4 h-4" />
+                            )}
                           </button>
                         </div>
                       </td>

@@ -9,7 +9,7 @@ import Topbar from '@/components/layout/Topbar';
 import { 
   ArrowRight, Bot, CheckCircle2, Loader2, 
   Sparkles, Pencil, Activity, ClipboardList, 
-  Save, Eraser, User, ChevronLeft, Zap, Info
+  Save, Eraser, User, ChevronLeft, Zap, Info, ShieldCheck
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Appointment } from '@/types';

@@ -123,7 +123,7 @@ export default function PatientMedicalRecordsPage() {
             {activeTab === 'visits' && (
               <div className="space-y-4">
                 {visits.length > 0 ? visits.map((visit) => (
-                  <RecordItem key={visit.id} title={visit.specialty} subtitle={`د. ${visit.doctorName}`} date={visit.date} icon={FileText} badge={visit.type} />
+                   <RecordItem key={visit.id} title={visit.specialty} subtitle={`د. ${visit.doctorName}`} date={visit.date} icon={FileText} badge={visit.specialty} />
                 )) : <EmptyRecords message="لا توجد زيارات سابقة مسجلة" />}
               </div>
             )}
@@ -132,7 +132,7 @@ export default function PatientMedicalRecordsPage() {
             {activeTab === 'labs' && (
               <div className="space-y-4">
                 {labs.length > 0 ? labs.map((lab) => (
-                  <RecordItem key={lab.id} title={lab.testName} subtitle={lab.doctorName} date={lab.date} icon={TestTube2} badge={lab.status} statusColor={lab.status === 'NORMAL' ? 'emerald' : 'rose'} />
+                   <RecordItem key={lab.id} title={lab.testName} subtitle={lab.requestedBy || 'طبيب'} date={lab.date} icon={TestTube2} badge={lab.status} statusColor={lab.status === 'NORMAL' ? 'emerald' : 'rose'} />
                 )) : <EmptyRecords message="لا توجد نتائج تحاليل مخبرية" />}
               </div>
             )}

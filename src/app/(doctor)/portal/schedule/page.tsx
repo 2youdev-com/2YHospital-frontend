@@ -113,7 +113,7 @@ export default function DoctorSchedulePage() {
               disabled={isSaving} 
               className="flex items-center justify-center gap-3 bg-[#115e6e] text-white font-black text-sm px-8 py-4 rounded-2xl shadow-lg shadow-[#115e6e]/20 hover:bg-[#0d4753] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
             >
-              {isSaving ? <LoadingSpinner size="sm" color="white" /> : <Save className="w-5 h-5" />}
+              {isSaving ? <LoadingSpinner size="sm" /> : <Save className="w-5 h-5" />}
               {isSaving ? 'جارٍ الحفظ...' : 'حفظ الجدول'}
             </button>
           </div>

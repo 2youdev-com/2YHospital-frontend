@@ -11,7 +11,7 @@ import {
   ArrowRight, Calendar, Clock, Stethoscope, 
   MapPin, ShieldCheck, Sparkles, Zap, 
   ChevronRight, Phone, MessageSquare, AlertCircle,
-  FileText, Map, QrCode, Share2, Download
+  FileText, Map, QrCode, Share2, Download, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Appointment, AppointmentStatus } from '@/types';

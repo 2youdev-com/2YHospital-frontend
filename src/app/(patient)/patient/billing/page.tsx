@@ -9,7 +9,7 @@ import {
   Receipt, CreditCard, Download, ExternalLink, 
   ShieldCheck, Sparkles, Zap, ArrowUpRight, 
   Clock, CheckCircle2, AlertCircle, Loader2,
-  Wallet, TrendingUp, History
+  Wallet, TrendingUp, History, Calendar
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Bill, BillStatus } from '@/types';
@@ -156,7 +156,7 @@ export default function PatientBillingPage() {
                       <div className={cn(
                         "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border",
                         bill.status === 'PAID' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                        bill.status === 'OVERDUE' ? "bg-rose-50 text-rose-600 border-rose-100" :
+                        (bill.status === 'UNPAID' && new Date(bill.dueDate) < new Date()) ? "bg-rose-50 text-rose-600 border-rose-100" :
                         "bg-amber-50 text-amber-600 border-amber-100"
                       )}>
                         {BILL_STATUS_LABELS[bill.status as BillStatus]}

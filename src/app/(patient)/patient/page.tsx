@@ -37,9 +37,9 @@ export default function PatientHomePage() {
     appointmentsService.getMyAppointments({ limit: 50 })
       .then(res => {
         const appts = res.data || [];
-        const upcoming = appts
-          .filter(a => a.status === 'CONFIRMED' || a.status === 'PENDING')
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const upcoming = (appts as Appointment[])
+          .filter((a: Appointment) => a.status === 'CONFIRMED' || a.status === 'PENDING')
+          .sort((a: Appointment, b: Appointment) => new Date(a.date).getTime() - new Date(b.date).getTime());
         setNextAppt(upcoming[0] || null);
       })
       .catch(() => {})

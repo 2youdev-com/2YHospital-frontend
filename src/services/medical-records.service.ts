@@ -40,7 +40,7 @@ export const medicalRecordsService = {
   },
 
   async addMedicalNote(patientId: string, note: string) {
-    const { data } = await apiClient.post(`/medical-records/patient/${patientId}/notes`, { note });
+    const { data } = await apiClient.post(`/medical-records/patient/${patientId}/notes`, { content: note });
     return data.data;
   },
 

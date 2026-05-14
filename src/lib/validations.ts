@@ -27,6 +27,19 @@ export const createDoctorSchema = z.object({
 
 export type CreateDoctorInput = z.infer<typeof createDoctorSchema>;
 
+// ─── Patient ───────────────────────────────────────────────────────────────
+export const createPatientSchema = z.object({
+  nameAr: z.string().min(3, 'الاسم يجب أن يكون 3 أحرف على الأقل'),
+  nameEn: z.string().optional(),
+  phone: z.string().regex(/^05\d{8}$/, 'رقم الجوال غير صحيح'),
+  nationalId: z.string().optional(),
+  gender: z.enum(['MALE', 'FEMALE']),
+  dateOfBirth: z.string().min(1, 'تاريخ الميلاد مطلوب'),
+  bloodType: z.string().optional(),
+});
+
+export type CreatePatientInput = z.infer<typeof createPatientSchema>;
+
 // ─── Appointment ───────────────────────────────────────────────────────────
 export const bookAppointmentSchema = z.object({
   doctorId: z.string().min(1, 'يرجى اختيار الطبيب'),

@@ -60,7 +60,11 @@ apiClient.interceptors.response.use(
       try {
         const { data } = await axios.post(`${API_BASE_URL}/auth/refresh-token`, { refreshToken });
         const newToken = data.data.accessToken;
+        const newRefreshToken = data.data.refreshToken;
         Cookies.set('accessToken', newToken, { expires: 1 });
+        if (newRefreshToken) {
+          Cookies.set('refreshToken', newRefreshToken, { expires: 7 });
+        }
         processQueue(null, newToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);

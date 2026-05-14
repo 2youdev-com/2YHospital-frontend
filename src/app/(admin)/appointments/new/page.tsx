@@ -55,9 +55,11 @@ export default function NewAppointmentPage() {
       doctorsService.search(),
     ])
     .then(([pRes, docs]: [any, Doctor[]]) => {
-      const items = (pRes.items || pRes.data || []).map((p: any) => ({
+      // pRes is directly the array from adminService.getUsers
+      const rawItems = Array.isArray(pRes) ? pRes : (pRes.items || pRes.data || []);
+      const items = rawItems.map((p: any) => ({
         ...p,
-        id: p.patientId || p.id // Use patientId if available (from admin getUsers)
+        id: p.patientId || p.id // Use patientId if available
       }));
       setPatients(items);
       setDoctors(docs.filter((d) => d.isActive));

@@ -57,6 +57,11 @@ export const adminService = {
     return data.data;
   },
 
+  async createPatient(payload: any) {
+    const { data } = await apiClient.post('/admin/patients', payload);
+    return data.data;
+  },
+
   // ─── Branches ───────────────────────────────────────────────────────────────
   async getBranches(): Promise<Branch[]> {
     const { data } = await apiClient.get('/admin/branches');

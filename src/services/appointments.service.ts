@@ -92,6 +92,16 @@ export const appointmentsService = {
     return Array.isArray(data.data) ? data.data.map(normalizeAppointment) : [];
   },
 
+  async getDoctorAppointment(id: string): Promise<Appointment> {
+    const { data } = await apiClient.get(`/appointments/doctor/${id}`);
+    return normalizeAppointment(data.data);
+  },
+
+  async updateDoctorAppointmentStatus(id: string, status: string) {
+    const { data } = await apiClient.patch(`/appointments/doctor/${id}/status`, { status });
+    return normalizeAppointment(data.data);
+  },
+
   // Admin / Receptionist
   async getAllAppointments(params?: {
     status?: string;
@@ -102,5 +112,20 @@ export const appointmentsService = {
   }) {
     const { data } = await apiClient.get('/appointments', { params });
     return normalizePaginatedAppointments(data);
+  },
+
+  async getAdminAppointment(id: string): Promise<Appointment> {
+    const { data } = await apiClient.get(`/appointments/${id}`);
+    return normalizeAppointment(data.data);
+  },
+
+  async cancelAdmin(id: string, reason?: string) {
+    const { data } = await apiClient.patch(`/appointments/${id}/cancel`, { reason });
+    return data.data;
+  },
+
+  async updateAdminStatus(id: string, status: string) {
+    const { data } = await apiClient.patch(`/appointments/${id}/status`, { status });
+    return normalizeAppointment(data.data);
   },
 };

@@ -33,9 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const me = await authService.getMe();
       cachedUser = me;
       setUser(me);
-    } catch {
+    } catch (err: any) {
       cachedUser = null;
       setUser(null);
+      // FIX: Must clear cookies on failure, otherwise middleware keeps redirecting back to dashboard,
+      // causing an infinite loop when the server returns 429 Too Many Requests or 500.
+      clearAuthCookies();
     }
   }, []);
 

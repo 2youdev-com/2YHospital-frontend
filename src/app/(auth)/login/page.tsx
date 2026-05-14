@@ -40,7 +40,9 @@ export default function LoginPage() {
       const tokens = await authService.verifyOtp(phone, otp);
       login(tokens);
       toast.success('تم تسجيل الدخول بنجاح');
-      router.push(tokens.user.role === 'DOCTOR' ? '/portal' : '/dashboard');
+      if (tokens.user.role === 'DOCTOR') router.push('/portal');
+      else if (tokens.user.role === 'PATIENT') router.push('/patient');
+      else router.push('/dashboard');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       toast.error(msg || 'رمز التحقق غير صحيح');
@@ -103,8 +105,14 @@ export default function LoginPage() {
                   <input
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="05XXXXXXXX"
+                    onChange={(e) => {
+                      let val = e.target.value.replace(/[^\d+]/g, '');
+                      if (val.startsWith('+966')) val = val.substring(4);
+                      else if (val.startsWith('00966')) val = val.substring(5);
+                      else if (val.startsWith('0')) val = val.substring(1);
+                      setPhone(val);
+                    }}
+                    placeholder="5XXXXXXXX"
                     className="w-full pl-[90px] pr-12 h-full text-sm font-mono outline-none text-right placeholder-slate-300"
                     dir="ltr"
                     required

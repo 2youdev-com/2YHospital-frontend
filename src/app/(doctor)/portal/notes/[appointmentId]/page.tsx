@@ -31,7 +31,7 @@ export default function VisitNotesPage() {
     let ignore = false;
     if (!appointmentId) return;
 
-    appointmentsService.getMyAppointment(appointmentId)
+    appointmentsService.getDoctorAppointment(appointmentId)
       .then(res => { if (!ignore) setAppt(res); })
       .catch(() => { if (!ignore) toast.error('فشل تحميل بيانات الموعد'); });
 

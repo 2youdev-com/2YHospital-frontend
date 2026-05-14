@@ -45,7 +45,7 @@ export default function DoctorAppointmentDetailPage() {
     setIsLoading(true);
     setSummary(null);
 
-    appointmentsService.getMyAppointment(id)
+    appointmentsService.getDoctorAppointment(id)
       .then(async (a) => {
         if (ignore) return;
         setAppt(a);

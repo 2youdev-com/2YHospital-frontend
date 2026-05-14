@@ -30,8 +30,8 @@ export default function PatientAppointmentsPage() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const upcoming = appointments.filter(a => a.status === 'CONFIRMED' || a.status === 'PENDING');
-  const past = appointments.filter(a => a.status === 'COMPLETED' || a.status === 'CANCELLED');
+  const upcoming = appointments.filter(a => a.status === 'CONFIRMED' || a.status === 'PENDING' || a.status === 'RESCHEDULED');
+  const past = appointments.filter(a => a.status === 'COMPLETED' || a.status === 'CANCELLED' || a.status === 'NO_SHOW');
 
   if (isLoading) return (
     <div className="bg-[#f4f7f8] min-h-screen">

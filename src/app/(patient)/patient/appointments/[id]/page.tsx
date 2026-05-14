@@ -65,7 +65,7 @@ export default function PatientAppointmentDetailPage() {
     </div>
   );
 
-  const isUpcoming = appointment.status === 'CONFIRMED' || appointment.status === 'PENDING';
+  const isUpcoming = appointment.status === 'CONFIRMED' || appointment.status === 'PENDING' || appointment.status === 'RESCHEDULED';
 
   return (
     <div className="bg-[#f4f7f8] min-h-screen pb-12">

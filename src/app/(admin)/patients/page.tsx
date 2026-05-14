@@ -7,7 +7,7 @@ import Topbar from '@/components/layout/Topbar';
 import {
   Users, Eye, Phone, Calendar, ShieldOff, ShieldCheck,
   Search, Filter, Activity, ArrowUpRight, ActivitySquare,
-  UserCheck, UserX, UserSquare2
+  UserCheck, UserX, UserSquare2, UserPlus
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -94,7 +94,14 @@ export default function PatientsPage() {
             </div>
           </div>
           
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            <Link 
+              href="/patients/new" 
+              className="flex items-center gap-2 bg-[#115e6e] text-white px-6 py-3 rounded-2xl font-black text-sm shadow-lg shadow-[#115e6e]/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <UserPlus className="w-5 h-5" />
+              إضافة مريض جديد
+            </Link>
             <div className="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 min-w-[140px]">
               <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center">
                 <UserSquare2 className="w-5 h-5" />

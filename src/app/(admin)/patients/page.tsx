@@ -140,7 +140,7 @@ export default function PatientsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث بالاسم، رقم الجوال، أو رقم الملف (MRN)..."
+              placeholder="ابحث بالاسم، رقم الهاتف، أو رقم الملف (MRN)..."
               className="w-full bg-slate-50 border border-slate-100 text-slate-700 text-sm font-bold rounded-xl pr-11 pl-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#2bbcb3]/50 focus:border-[#2bbcb3] transition-all placeholder:font-medium placeholder:text-slate-400"
             />
           </div>

@@ -51,8 +51,8 @@ export default function PatientForm({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[11px] font-black text-slate-400 mr-2 uppercase tracking-wider">رقم الجوال *</label>
-            <input {...register('phone')} className="input-field" placeholder="05XXXXXXXX" dir="ltr" />
+            <label className="text-[11px] font-black text-slate-400 mr-2 uppercase tracking-wider">رقم الهاتف *</label>
+            <input {...register('phone')} className="input-field" placeholder="01XXXXXXXXX" dir="ltr" />
             {errors.phone && <p className="text-[10px] font-bold text-rose-500 mr-2">{errors.phone.message}</p>}
           </div>
         </div>
@@ -117,7 +117,7 @@ export default function PatientForm({
       <div className="bg-amber-50/50 border border-amber-100 rounded-[1.5rem] p-4 flex items-start gap-4">
         <Info className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
         <p className="text-[11px] font-bold text-amber-600 leading-relaxed">
-          تأكد من صحة رقم الجوال، حيث سيتم استخدامه لإرسال رموز التحقق وإشعارات المواعيد. 
+          تأكد من صحة رقم الهاتف، حيث سيتم استخدامه لإرسال رموز التحقق وإشعارات المواعيد. 
           رقم الملف الطبي (MRN) سيتم توليده تلقائياً.
         </p>
       </div>

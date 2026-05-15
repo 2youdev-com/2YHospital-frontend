@@ -78,11 +78,11 @@ export default function DoctorForm({
           </div>
           
           <div className="space-y-1.5">
-            <label className="text-[11px] font-black text-slate-400 mr-2 uppercase tracking-wider">رقم الجوال *</label>
+            <label className="text-[11px] font-black text-slate-400 mr-2 uppercase tracking-wider">رقم الهاتف *</label>
             <input
               {...register('phone')}
               className="input-field"
-              placeholder="05XXXXXXXX"
+              placeholder="01XXXXXXXXX"
               dir="ltr"
             />
             {errors.phone && <p className="text-[10px] font-bold text-rose-500 mr-2">{errors.phone.message}</p>}
@@ -123,7 +123,7 @@ export default function DoctorForm({
         </div>
 
         <div className="space-y-1.5 max-w-xs">
-          <label className="text-[11px] font-black text-slate-400 mr-2 uppercase tracking-wider">رسوم الاستشارة (ريال)</label>
+          <label className="text-[11px] font-black text-slate-400 mr-2 uppercase tracking-wider">رسوم الاستشارة (جنيه مصري)</label>
           <div className="relative">
             <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
               <DollarSign className="w-4 h-4" />
@@ -165,7 +165,7 @@ export default function DoctorForm({
         <Info className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-xs font-black text-amber-800">ملاحظة هامة</p>
-          <p className="text-[11px] font-bold text-amber-600 mt-0.5">يرجى التأكد من صحة رقم الجوال حيث سيتم استخدامه في إرسال التنبيهات وإدارة الدخول للنظام.</p>
+          <p className="text-[11px] font-bold text-amber-600 mt-0.5">يرجى التأكد من صحة رقم الهاتف حيث سيتم استخدامه في إرسال التنبيهات وإدارة الدخول للنظام.</p>
         </div>
       </div>
 

@@ -162,7 +162,7 @@ export default function DoctorProfilePage() {
                     </div>
                     <div className="pt-4 mt-4 border-t border-white/10 flex items-center justify-between">
                       <span className="text-sm font-bold text-white/60">رسوم الكشف</span>
-                      <span className="text-xl font-black">{doctor.consultationFee ? `${doctor.consultationFee} ر.س` : '—'}</span>
+                      <span className="text-xl font-black">{doctor.consultationFee ? `${doctor.consultationFee} ج.م` : '—'}</span>
                     </div>
                   </div>
                 </div>

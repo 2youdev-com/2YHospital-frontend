@@ -32,9 +32,9 @@ interface RecentAppt {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n: number | null | undefined) =>
-  n != null ? n.toLocaleString('ar-SA') : '—';
-const fmtMoney = (n: number | null | undefined) =>
-  n != null ? `${n.toLocaleString('ar-SA')} ر.س` : '—';
+  n != null ? n.toLocaleString('ar-EG') : '—';
+const formatCurrency = (n: number | null | undefined) =>
+  n != null ? `${n.toLocaleString('ar-EG')} ج.م` : '—';
 const growth = (n: number | null | undefined) => (n != null ? n : null);
 
 const APPT_STATUS: Record<string, { label: string; cls: string; dot: string }> = {
@@ -63,7 +63,7 @@ const ChartTip = ({ active, payload, label }: any) => {
           <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ background: p.color }} />
           <span className="text-slate-600 font-medium">{p.name}:</span>
           <span className="font-black mr-auto">
-            {p.name === 'إيرادات' ? `${Number(p.value).toLocaleString('ar-SA')} ر.س` : p.value}
+            {p.name === 'إيرادات' ? `${Number(p.value).toLocaleString('ar-EG')} ج.م` : p.value}
           </span>
         </p>
       ))}
@@ -228,7 +228,7 @@ export default function DashboardPage() {
     loadAll(); 
   }, []);
 
-  const todayStr = new Date().toLocaleDateString('ar-SA', {
+  const todayStr = new Date().toLocaleDateString('ar-EG', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
@@ -334,8 +334,8 @@ export default function DashboardPage() {
           />
           <KpiCard
             title="إيرادات الشهر"
-            value={fmtMoney(stats?.totalRevenue)}
-            sub={`الشهر السابق: ${fmtMoney(stats?.prevRevenue)}`}
+            value={formatCurrency(stats?.totalRevenue)}
+            sub={`الشهر السابق: ${formatCurrency(stats?.prevRevenue)}`}
             icon={DollarSign}
             theme="secondary"
             trend={growth(stats?.revenueGrowth)}

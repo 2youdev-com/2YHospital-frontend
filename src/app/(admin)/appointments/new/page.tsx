@@ -206,7 +206,7 @@ export default function NewAppointmentPage() {
                 type="search"
                 value={patientSearch}
                 onChange={(e) => setPatientSearch(e.target.value)}
-                placeholder="ابحث بالاسم، رقم الملف، أو رقم الجوال..."
+                placeholder="ابحث بالاسم، رقم الملف، أو رقم الهاتف..."
                 className="input-field pr-12"
               />
             </div>
@@ -280,7 +280,7 @@ export default function NewAppointmentPage() {
                   <div className="flex items-center gap-4">
                     {d.consultationFee && (
                       <span className="text-[10px] font-black text-[#115e6e] bg-slate-50 px-2 py-1 rounded-lg group-hover:bg-white transition-all">
-                        {d.consultationFee} ر.س
+                        {d.consultationFee} ج.م
                       </span>
                     )}
                     <ChevronLeft className="w-5 h-5 text-slate-200 group-hover:text-[#115e6e] group-hover:-translate-x-1 transition-all" />

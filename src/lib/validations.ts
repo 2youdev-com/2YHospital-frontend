@@ -4,8 +4,8 @@ import { z } from 'zod';
 export const phoneSchema = z.object({
   phone: z
     .string()
-    .min(10, 'رقم الجوال يجب أن يكون 10 أرقام على الأقل')
-    .regex(/^05\d{8}$/, 'رقم الجوال غير صحيح (مثال: 05XXXXXXXX)'),
+    .min(11, 'رقم الهاتف يجب أن يكون 11 رقماً')
+    .regex(/^01[0125]\d{8}$/, 'رقم الهاتف غير صحيح (مثال: 01XXXXXXXXX)'),
 });
 
 export const otpSchema = z.object({
@@ -18,7 +18,7 @@ export const otpSchema = z.object({
 // ─── Doctor ────────────────────────────────────────────────────────────────
 export const createDoctorSchema = z.object({
   name: z.string().min(3, 'الاسم يجب أن يكون 3 أحرف على الأقل'),
-  phone: z.string().regex(/^05\d{8}$/, 'رقم الجوال غير صحيح'),
+  phone: z.string().regex(/^01[0125]\d{8}$/, 'رقم الهاتف غير صحيح (مثال: 01XXXXXXXXX)'),
   specialtyId: z.string().min(1, 'يرجى اختيار التخصص'),
   branchId: z.string().optional(),
   bio: z.string().max(500, 'النبذة لا تتجاوز 500 حرف').optional(),
@@ -31,7 +31,7 @@ export type CreateDoctorInput = z.infer<typeof createDoctorSchema>;
 export const createPatientSchema = z.object({
   nameAr: z.string().min(3, 'الاسم يجب أن يكون 3 أحرف على الأقل'),
   nameEn: z.string().optional(),
-  phone: z.string().regex(/^05\d{8}$/, 'رقم الجوال غير صحيح'),
+  phone: z.string().regex(/^01[0125]\d{8}$/, 'رقم الهاتف غير صحيح (مثال: 01XXXXXXXXX)'),
   nationalId: z.string().optional(),
   gender: z.enum(['MALE', 'FEMALE']),
   dateOfBirth: z.string().min(1, 'تاريخ الميلاد مطلوب'),

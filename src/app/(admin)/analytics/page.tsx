@@ -44,7 +44,7 @@ const ChartTip = ({ active, payload, label }: any) => {
           <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ background: p.color }} />
           <span className="text-slate-600 font-medium">{p.name}:</span>
           <span className="font-black mr-auto tabular-nums">
-            {p.name.includes('إيرادات') ? `${Number(p.value).toLocaleString('ar-SA')} ر.س` : p.value}
+            {p.name.includes('إيرادات') ? `${Number(p.value).toLocaleString('ar-EG')} ج.م` : p.value}
           </span>
         </p>
       ))}
@@ -219,20 +219,20 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <MiniKpi 
             label="إجمالي إيرادات الفترة" 
-            value={`${totalRevenue.toLocaleString('ar-SA')} ر.س`} 
+            value={`${totalRevenue.toLocaleString('ar-EG')} ج.م`} 
             icon={DollarSign} 
             color="text-[#115e6e]"
             trend="+12.4%" 
           />
           <MiniKpi 
             label="متوسط الفواتير الشهرية" 
-            value={`${avgMonthlyRevenue.toLocaleString('ar-SA')} ر.س`} 
+            value={`${avgMonthlyRevenue.toLocaleString('ar-EG')} ج.م`} 
             icon={Activity} 
             color="text-[#2bbcb3]" 
           />
           <MiniKpi 
             label="إجمالي المواعيد" 
-            value={totalAppointments.toLocaleString('ar-SA')} 
+            value={totalAppointments.toLocaleString('ar-EG')} 
             icon={CalendarDays} 
             color="text-[#115e6e]" 
           />

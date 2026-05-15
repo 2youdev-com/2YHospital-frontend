@@ -30,11 +30,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
         <div className="flex flex-col items-center gap-3">
           <Clock className="h-6 w-6 stroke-[1.5]" />
-          <span className="text-sm font-bold">خدمة على مدار 24/7</span>
+          <span className="text-sm font-bold">خدمة على مدار الساعة</span>
         </div>
         <div className="flex flex-col items-center gap-3">
           <Users className="h-6 w-6 stroke-[1.5]" />
-          <span className="text-sm font-bold">رعاية أفضل لك</span>
+          <span className="text-sm font-bold">رعاية صحية متميزة</span>
         </div>
       </div>
     </div>

@@ -17,9 +17,9 @@ export function formatDate(date: string | Date, fmt = 'dd MMMM yyyy'): string {
 }
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('ar-SA', {
+  return new Intl.NumberFormat('ar-EG', {
     style: 'currency',
-    currency: 'SAR',
+    currency: 'EGP',
     minimumFractionDigits: 0,
   }).format(amount);
 }

@@ -65,8 +65,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full">
-      <div className="bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-2xl overflow-hidden border border-white/50 p-6 sm:p-10">
+    <div className="w-full max-w-[400px] mx-auto px-2 sm:px-0">
+      <div className="bg-white/95 backdrop-blur-xl rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl overflow-hidden border border-white/50 p-5 sm:p-8">
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
@@ -241,7 +241,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        <div className="mt-4 pt-4 bg-slate-50/50 -mx-6 sm:-mx-8 -mb-6 sm:-mb-8 px-6 pt-4 pb-3 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] font-semibold text-slate-500 text-center">
+        <div className="mt-4 pt-4 bg-slate-50/50 -mx-5 sm:-mx-8 -mb-5 sm:-mb-8 px-5 py-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[10px] sm:text-[11px] font-semibold text-slate-500 text-center">
           <ShieldCheck className="w-4 h-4 text-[#115e6e]" />
           <span className="pt-0.5">بتسجيل الدخول، أنت توافق على سياسة الخصوصية وشروط الاستخدام</span>
         </div>
